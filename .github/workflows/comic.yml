@@ -1,0 +1,64 @@
+name: 小说转AI漫画
+on:
+  workflow_dispatch:
+
+jobs:
+  generate-comic:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 设置Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: 安装依赖
+        run: |
+          python -m pip install --upgrade pip
+          pip install torch==2.0.1 diffusers==0.20.2 transformers==4.30.2 accelerate pillow
+
+      - name: 生成AI漫画
+        run: |
+          cat > main.py << 'EOF'
+import torch
+from diffusers import StableDiffusionPipeline
+from PIL import Image
+
+print("🔽 加载AI漫画模型...")
+pipe = StableDiffusionPipeline.from_pretrained(
+    "runwayml/stable-diffusion-v1-5",
+    torch_dtype=torch.float32,
+    safety_checker=None
+)
+pipe = pipe.to("cpu")
+
+# A股重生漫画提示词
+prompt = """
+manga style, Chinese stock market investor, serious face,
+K-line chart, retro comic panel, black and white,
+clean line art, high detail, story: A股重生洗耻辱
+"""
+negative_prompt = "photo, realistic, color, blurry, ugly"
+
+print("🎨 生成漫画...")
+image = pipe(
+    prompt=prompt,
+    negative_prompt=negative_prompt,
+    width=768,
+    height=768,
+    num_inference_steps=20
+).images[0]
+
+image.save("A股重生漫画.png")
+print("✅ 漫画生成完成！")
+EOF
+
+          python main.py
+
+      - name: 上传漫画文件
+        uses: actions/upload-artifact@v4
+        with:
+          name: 生成的漫画文件
+          path: A股重生漫画.png
